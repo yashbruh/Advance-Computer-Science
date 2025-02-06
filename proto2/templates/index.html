@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision vs Video Intelligence</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #282c34, #61dafb);
+            color: white;
+            text-align: center;
+        }
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #61dafb;
+        }
+        .inputs {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        .input-box {
+            width: 45%;
+            text-align: center;
+        }
+        input[type="file"] {
+            display: block;
+            margin: 10px auto;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background: #282c34;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #61dafb;
+        }
+        .results-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        .api-result {
+            width: 45%;
+            background-color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+        }
+        .api-result h2 {
+            color: #61dafb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vision & Video Intelligence</h1>
+        <div class="inputs">
+            <div class="input-box">
+                <h3>Upload Image</h3>
+                <input type="file" id="imageInput" accept="image/*">
+                <div id="imagePreview"></div>
+            </div>
+            <div class="input-box">
+                <h3>Upload Video</h3>
+                <input type="file" id="videoInput" accept="video/*">
+                <div id="videoPreview"></div>
+            </div>
+        </div>
+        <button id="analyzeBtn">Analyze</button>
+        <div class="results-container">
+            <div class="api-result" id="visionResult">
+                <h2>Image Analysis</h2>
+                <p><strong>Time Taken:</strong> <span id="imageTime">Waiting...</span></p>
+                <p><strong>Detected Brand:</strong> <span id="imageBrand">Waiting for analysis...</span></p>
+            </div>
+            <div class="api-result" id="videoResult">
+                <h2>Video Analysis</h2>
+                <p><strong>Time Taken:</strong> <span id="videoTime">Waiting...</span></p>
+                <p><strong>Detected Brand:</strong> <span id="videoBrand">Waiting for analysis...</span></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('imageInput').addEventListener('change', previewFile);
+        document.getElementById('videoInput').addEventListener('change', previewFile);
+
+        function previewFile(event) {
+            const file = event.target.files[0];
+            const previewDiv = event.target.id === 'imageInput' ? document.getElementById('imagePreview') : document.getElementById('videoPreview');
+            previewDiv.innerHTML = '';
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.maxWidth = '100%';
+                    img.style.borderRadius = '10px';
+                    previewDiv.appendChild(img);
+                } else if (file.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = e.target.result;
+                    video.controls = true;
+                    video.style.maxWidth = '100%';
+                    previewDiv.appendChild(video);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('analyzeBtn').addEventListener('click', function () {
+            const imageFile = document.getElementById('imageInput').files[0];
+            const videoFile = document.getElementById('videoInput').files[0];
+
+            if (!imageFile && !videoFile) {
+                alert("Please upload at least one file before analyzing.");
+                return;
+            }
+
+            if (imageFile) analyzeFile(imageFile, 'image');
+            if (videoFile) analyzeFile(videoFile, 'video');
+        });
+
+        function analyzeFile(file, type) {
+            const formData = new FormData();
+            formData.append('file', file);
+            const startTime = Date.now();
+
+            fetch('https://vision-ai-app-822474867153.europe-west3.run.app/analyze', {
+                method: 'POST',
+                body: formData,
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const timeTaken = Date.now() - startTime + ' ms';
+                    if (type === 'image') {
+                        document.getElementById('imageTime').textContent = timeTaken;
+                        document.getElementById('imageBrand').textContent = data.brands ? data.brands.join(', ') : 'No brands detected';
+<!--                        document.getElementById('imageDescription').textContent = data.description || 'No description available';-->
+                    } else if (type === 'video') {
+                        document.getElementById('videoTime').textContent = timeTaken;
+                        document.getElementById('videoBrand').textContent = data.brands ? data.brands.join(', ') : 'No brands detected';
+<!--                        document.getElementById('videoDescription').textContent = data.description || 'No description available';-->
+                    }
+                })
+                .catch(error => {
+                    alert('Error analyzing file: ' + error.message);
+                });
+        }
+    </script>
+</body>
+</html>
